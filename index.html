@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="シンプルなタスク管理。今日・今週・いつかの3箱に分けて、毎日達成感を得る。">
+  <meta name="theme-color" content="#FFFFFF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>3箱タスク管理</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23E24B4A' width='180' height='180'/><text x='90' y='110' font-size='80' font-weight='bold' text-anchor='middle' fill='white' font-family='system-ui'>3</text></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23E24B4A' width='180' height='180' rx='40'/><text x='90' y='120' font-size='90' font-weight='bold' text-anchor='middle' fill='white' font-family='system-ui'>3</text></svg>">
+  <link rel="manifest" href="data:application/json,{\"name\":\"3箱タスク管理\",\"short_name\":\"3箱\",\"start_url\":\"/\",\"display\":\"standalone\",\"background_color\":\"#ffffff\",\"theme_color\":\"#ffffff\",\"icons\":[{\"src\":\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23E24B4A' width='192' height='192' rx='40'/><text x='96' y='130' font-size='100' font-weight='bold' text-anchor='middle' fill='white' font-family='system-ui'>3</text></svg>\",\"sizes\":\"192x192\",\"type\":\"image/svg+xml\",\"purpose\":\"any\"}]}">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f9f9f7;
+      color: #2c2c2a;
+      padding: 16px 16px 120px 16px; /* 下部入力欄の被り防止 */
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-icon {
+      font-size: 24px;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #888780;
+      margin-bottom: 20px;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .bucket {
+      background: white;
+      border: 0.5px solid #d3d1c7;
+      border-radius: 14px;
+      padding: 16px;
+      min-height: 160px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .bucket-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .bucket-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .bucket-icon {
+      font-size: 18px;
+    }
+    .bucket-count {
+      font-size: 13px;
+      color: #888780;
+      background: #f1efe8;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+    .empty-state {
+      font-size: 13px;
+      color: #b4b2a9;
+      padding: 8px 0;
+      text-align: center;
+      border: 1px dashed #e4e2da;
+      border-radius: 8px;
+    }
+    .task-item {
+      display: flex;
+      align-items: center; /* 中央揃えでタップしやすく */
+      gap: 8px;
+      padding: 10px 10px;
+      border-radius: 10px;
+      background: #f1efe8;
+    }
+    .task-item.done {
+      background: #f1efe8;
+      opacity: 0.6;
+    }
+    /* タップ領域を40px以上に拡大 */
+    .task-checkbox {
+      width: 26px;
+      height: 26px;
+      min-width: 26px;
+      border-radius: 6px;
+      border: 1.5px solid #b4b2a9;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font-size: 16px;
+      color: white;
+      transition: all 0.2s;
+    }
+    .task-checkbox.done {
+      background: #639922;
+      border-color: #639922;
+    }
+    .task-label {
+      flex: 1;
+      font-size: 14px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .task-label.done {
+      text-decoration: line-through;
+      color: #b4b2a9;
+    }
+    /* 箱移動セレクト */
+    .task-move {
+      width: 30px;
+      height: 30px;
+      min-width: 30px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+      font-size: 15px;
+      color: #2c2c2a;
+      opacity: 0.55;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .task-move:active {
+      background: rgba(0,0,0,0.06);
+    }
+    /* タップ領域を拡大 */
+    .task-delete {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.4;
+      font-size: 16px;
+      color: #2c2c2a;
+    }
+    .input-section {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom)); /* スマホの下部バー対策 */
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      border-top: 0.5px solid #d3d1c7;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 999;
+    }
+    /* iOSの自動ズーム防止のためフォントサイズを16pxに */
+    input[type="text"] {
+      flex: 1;
+      padding: 12px;
+      border: 0.5px solid #d3d1c7;
+      border-radius: 10px;
+      font-size: 16px;
+      font-family: inherit;
+      background: #f9f9f7;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #534AB7;
+      background: white;
+    }
+    input[type="text"].error {
+      border-color: #E24B4A;
+      background: #fdf2f2;
+    }
+    select {
+      padding: 12px 8px;
+      border: 0.5px solid #d3d1c7;
+      border-radius: 10px;
+      font-size: 16px;
+      font-family: inherit;
+      cursor: pointer;
+      background: white;
+    }
+    .icon-btn {
+      padding: 8px 12px;
+      border: 0.5px solid #d3d1c7;
+      background: white;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .warning-msg {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #E24B4A;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      animation: slideUp 0.3s ease;
+      z-index: 1000;
+      max-width: 90%;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .toast-msg {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2c2c2a;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      animation: slideUp 0.3s ease;
+      z-index: 1000;
+      max-width: 90%;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    @media (max-width: 480px) {
+      .board {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* 確認モーダル（confirm()の代替） */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 20px;
+    }
+    .modal-box {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      max-width: 320px;
+      width: 100%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .modal-msg {
+      font-size: 15px;
+      line-height: 1.5;
+      margin-bottom: 18px;
+      color: #2c2c2a;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .modal-btn {
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      border: 0.5px solid #d3d1c7;
+      background: white;
+    }
+    .modal-btn.danger {
+      background: #E24B4A;
+      color: white;
+      border-color: #E24B4A;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1><span class="header-icon">📋</span>3箱タスク</h1>
+      <button class="icon-btn" id="clear-btn">リセット</button>
+    </div>
+    <p class="hint">やることを今日・今週・いつかに振り分けよう。</p>
+    <div class="board" id="board"></div>
+    <div class="input-section">
+      <input type="text" id="new-task" placeholder="タスクを入力して確定" inputmode="text" enterkeyhint="done" />
+      <select id="new-bucket">
+        <option value="today">今日</option>
+        <option value="week">今週</option>
+        <option value="someday">いつか</option>
+      </select>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'task_manager_data';
+    const buckets = [
+      { key: 'today', label: '今日', icon: '☀️', limit: null },
+      { key: 'week', label: '今週', icon: '📅', limit: null },
+      { key: 'someday', label: 'いつか', icon: '☁️', limit: null }
+    ];
+    const bucketByKey = Object.fromEntries(buckets.map(b => [b.key, b]));
+
+    let tasks = [];
+    let idCounter = 1;
+
+    function loadData() {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          const data = JSON.parse(stored);
+          tasks = Array.isArray(data.tasks) ? data.tasks : [];
+          idCounter = (data.idCounter || 1);
+        } catch (e) {
+          console.error('データ読み込みエラー:', e);
+          tasks = [];
+        }
+      }
+    }
+
+    function saveData() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks, idCounter }));
+      } catch (e) {
+        console.error('保存エラー:', e);
+        showWarning('保存に失敗しました');
+      }
+    }
+
+    function render() {
+      const board = document.getElementById('board');
+      board.innerHTML = '';
+
+      buckets.forEach(b => {
+        // 未完了を先に、完了したものは下にまとめる（完了の達成感は残しつつ箱を見やすく）
+        const items = tasks
+          .filter(t => t.bucket === b.key)
+          .slice()
+          .sort((a, c) => (a.done === c.done) ? 0 : (a.done ? 1 : -1));
+
+        const col = document.createElement('div');
+        col.className = 'bucket';
+
+        const header = document.createElement('div');
+        header.className = 'bucket-header';
+        const openCount = items.filter(t => !t.done).length;
+        header.innerHTML = `
+          <span class="bucket-title">
+            <span class="bucket-icon">${b.icon}</span>${b.label}
+          </span>
+          <span class="bucket-count">${openCount}</span>
+        `;
+        col.appendChild(header);
+
+        const list = document.createElement('div');
+        list.className = 'task-list';
+
+        if (items.length === 0) {
+          const empty = document.createElement('p');
+          empty.className = 'empty-state';
+          empty.textContent = 'まだありません';
+          list.appendChild(empty);
+        }
+
+        items.forEach(t => {
+          const row = document.createElement('div');
+          row.className = `task-item ${t.done ? 'done' : ''}`;
+
+          const check = document.createElement('button');
+          check.className = `task-checkbox ${t.done ? 'done' : ''}`;
+          check.setAttribute('aria-label', t.done ? '未完了に戻す' : '完了にする');
+          check.textContent = t.done ? '✓' : '';
+          check.onclick = (e) => {
+            e.preventDefault();
+            t.done = !t.done;
+            saveData();
+            render();
+          };
+
+          const label = document.createElement('span');
+          label.className = `task-label ${t.done ? 'done' : ''}`;
+          label.textContent = t.text;
+
+          // 箱移動：現在の箱以外を選べるシンプルなセレクト
+          const move = document.createElement('select');
+          move.className = 'task-move';
+          move.setAttribute('aria-label', '箱を移動');
+          buckets.forEach(opt => {
+            const o = document.createElement('option');
+            o.value = opt.key;
+            o.textContent = opt.icon;
+            if (opt.key === t.bucket) o.selected = true;
+            move.appendChild(o);
+          });
+          move.onchange = () => {
+            if (move.value !== t.bucket) {
+              t.bucket = move.value;
+              saveData();
+              render();
+            }
+          };
+
+          const del = document.createElement('button');
+          del.className = 'task-delete';
+          del.setAttribute('aria-label', '削除');
+          del.textContent = '✕';
+          del.onclick = (e) => {
+            e.preventDefault();
+            showConfirm('このタスクを削除しますか？', () => {
+              tasks = tasks.filter(x => x.id !== t.id);
+              saveData();
+              render();
+            });
+          };
+
+          row.appendChild(check);
+          row.appendChild(label);
+          row.appendChild(move);
+          row.appendChild(del);
+          list.appendChild(row);
+        });
+
+        col.appendChild(list);
+        board.appendChild(col);
+      });
+    }
+
+    function showWarning(msg) {
+      document.querySelectorAll('.warning-msg, .toast-msg').forEach(el => el.remove());
+      const warning = document.createElement('div');
+      warning.className = 'warning-msg';
+      warning.textContent = msg;
+      document.body.appendChild(warning);
+      setTimeout(() => warning.remove(), 3000);
+    }
+
+    function showToast(msg) {
+      document.querySelectorAll('.warning-msg, .toast-msg').forEach(el => el.remove());
+      const toast = document.createElement('div');
+      toast.className = 'toast-msg';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2200);
+    }
+
+    // confirm() の代替。OS側のダイアログがブロックされる環境でも動作する
+    function showConfirm(message, onConfirm) {
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+
+      const box = document.createElement('div');
+      box.className = 'modal-box';
+
+      const msg = document.createElement('p');
+      msg.className = 'modal-msg';
+      msg.textContent = message;
+
+      const actions = document.createElement('div');
+      actions.className = 'modal-actions';
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'modal-btn';
+      cancelBtn.textContent = 'キャンセル';
+      cancelBtn.onclick = () => overlay.remove();
+
+      const okBtn = document.createElement('button');
+      okBtn.className = 'modal-btn danger';
+      okBtn.textContent = '削除する';
+      okBtn.onclick = () => {
+        overlay.remove();
+        onConfirm();
+      };
+
+      actions.appendChild(cancelBtn);
+      actions.appendChild(okBtn);
+      box.appendChild(msg);
+      box.appendChild(actions);
+      overlay.appendChild(box);
+
+      overlay.onclick = (e) => {
+        if (e.target === overlay) overlay.remove();
+      };
+
+      document.body.appendChild(overlay);
+    }
+
+    document.getElementById('new-task').addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      const input = document.getElementById('new-task');
+      const bucketSel = document.getElementById('new-bucket');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const bucket = bucketSel.value;
+      const limit = bucketByKey[bucket].limit;
+      const currentCount = tasks.filter(t => t.bucket === bucket && !t.done).length;
+
+      if (limit && currentCount >= limit) {
+        input.classList.add('error');
+        showWarning('上限に達しました。完了するか移動してください');
+        setTimeout(() => input.classList.remove('error'), 2000);
+        return;
+      }
+
+      tasks.push({ id: idCounter++, text, bucket, done: false });
+      input.value = '';
+      saveData();
+      render();
+      input.blur(); // 入力後にキーボードを閉じる（スマホ向け）
+    });
+
+    document.getElementById('clear-btn').addEventListener('click', () => {
+      showConfirm('すべてのタスクを削除してもいいですか？', () => {
+        tasks = [];
+        idCounter = 1;
+        saveData();
+        render();
+      });
+    });
+
+    // データの書き出しと読み込み機能は削除しました
+
+    loadData();
+    render();
+  </script>
+</body>
+</html>
