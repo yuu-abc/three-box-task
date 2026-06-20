@@ -76,6 +76,36 @@
     }
     .bucket-icon {
       font-size: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      flex: 0 0 18px;
+    }
+    .icon-calendar {
+      position: relative;
+      border: 1.6px solid currentColor;
+      border-radius: 4px;
+    }
+    .icon-calendar::before {
+      content: '';
+      position: absolute;
+      left: -1.6px;
+      right: -1.6px;
+      top: 4px;
+      border-top: 1.6px solid currentColor;
+    }
+    .icon-calendar::after {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 9px;
+      width: 3px;
+      height: 3px;
+      border-radius: 1px;
+      background: currentColor;
+      box-shadow: 5px 0 0 currentColor, 10px 0 0 currentColor;
     }
     .bucket-count {
       font-size: 13px;
@@ -83,6 +113,12 @@
       background: #f1efe8;
       padding: 2px 8px;
       border-radius: 10px;
+    }
+    .date-line {
+      font-size: 13px;
+      color: #6d6b64;
+      margin: -6px 0 10px;
+      min-height: 19px;
     }
     .task-list {
       display: flex;
@@ -323,6 +359,7 @@
       <h1><span class="header-icon">📋</span>3箱タスク</h1>
       <button class="icon-btn" id="clear-btn">リセット</button>
     </div>
+    <p class="date-line" id="jst-date" aria-live="polite"></p>
     <p class="hint">やることを今日・今週・いつかに振り分けよう。</p>
     <div class="board" id="board"></div>
     <div class="input-section">
@@ -338,14 +375,34 @@
   <script>
     const STORAGE_KEY = 'task_manager_data';
     const buckets = [
-      { key: 'today', label: '今日', icon: '☀️', limit: null },
-      { key: 'week', label: '今週', icon: '📅', limit: null },
-      { key: 'someday', label: 'いつか', icon: '☁️', limit: null }
+      { key: 'today', label: '今日', icon: '☀️', selectIcon: '☀', limit: null },
+      { key: 'week', label: '今週', iconClass: 'icon-calendar', selectIcon: '▦', limit: null },
+      { key: 'someday', label: 'いつか', icon: '☁️', selectIcon: '☁', limit: null }
     ];
     const bucketByKey = Object.fromEntries(buckets.map(b => [b.key, b]));
 
     let tasks = [];
     let idCounter = 1;
+
+    function createBucketIcon(bucket) {
+      const icon = document.createElement('span');
+      icon.className = `bucket-icon ${bucket.iconClass || ''}`.trim();
+      icon.setAttribute('aria-hidden', 'true');
+      if (!bucket.iconClass) icon.textContent = bucket.icon;
+      return icon;
+    }
+
+    function updateJstDate() {
+      const dateEl = document.getElementById('jst-date');
+      if (!dateEl) return;
+      dateEl.textContent = new Intl.DateTimeFormat('ja-JP', {
+        timeZone: 'Asia/Tokyo',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'short'
+      }).format(new Date());
+    }
 
     function loadData() {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -387,12 +444,17 @@
         const header = document.createElement('div');
         header.className = 'bucket-header';
         const openCount = items.filter(t => !t.done).length;
-        header.innerHTML = `
-          <span class="bucket-title">
-            <span class="bucket-icon">${b.icon}</span>${b.label}
-          </span>
-          <span class="bucket-count">${openCount}</span>
-        `;
+        const title = document.createElement('span');
+        title.className = 'bucket-title';
+        title.appendChild(createBucketIcon(b));
+        title.append(b.label);
+
+        const count = document.createElement('span');
+        count.className = 'bucket-count';
+        count.textContent = openCount;
+
+        header.appendChild(title);
+        header.appendChild(count);
         col.appendChild(header);
 
         const list = document.createElement('div');
@@ -431,7 +493,7 @@
           buckets.forEach(opt => {
             const o = document.createElement('option');
             o.value = opt.key;
-            o.textContent = opt.icon;
+            o.textContent = opt.selectIcon;
             if (opt.key === t.bucket) o.selected = true;
             move.appendChild(o);
           });
@@ -564,6 +626,8 @@
     // データの書き出しと読み込み機能は削除しました
 
     loadData();
+    updateJstDate();
+    setInterval(updateJstDate, 60 * 1000);
     render();
   </script>
 </body>
