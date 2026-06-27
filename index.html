@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="description" content="シンプルなタスク管理。今日・今週・いつかの3箱に分けて、毎日達成感を得る。">
   <meta name="theme-color" content="#FFFFFF">
+  <meta name="application-name" content="3箱タスク">
+  <link rel="manifest" href="manifest.webmanifest">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>3箱タスク管理</title>
@@ -43,7 +45,16 @@
     .hint {
       font-size: 13px;
       color: #888780;
+      margin-bottom: 8px;
+    }
+    .offline-status {
+      font-size: 12px;
+      color: #639922;
       margin-bottom: 20px;
+      min-height: 17px;
+    }
+    .offline-status.offline {
+      color: #E24B4A;
     }
     .board {
       display: grid;
@@ -367,6 +378,7 @@
     </div>
     <p class="date-line" id="jst-date" aria-live="polite"></p>
     <p class="hint">やることを今日・今週・いつかに振り分けよう。</p>
+    <p class="offline-status" id="offline-status" aria-live="polite"></p>
     <div class="board" id="board"></div>
     <div class="input-section">
       <input type="text" id="new-task" placeholder="タスクを入力して確定" inputmode="text" enterkeyhint="done" />
@@ -396,6 +408,35 @@
       icon.setAttribute('aria-hidden', 'true');
       if (!bucket.iconClass) icon.textContent = bucket.icon;
       return icon;
+    }
+
+    function updateOfflineStatus() {
+      const statusEl = document.getElementById('offline-status');
+      if (!statusEl) return;
+      if (navigator.onLine) {
+        statusEl.textContent = 'オフラインでも使えるよう準備済み';
+        statusEl.classList.remove('offline');
+      } else {
+        statusEl.textContent = 'オフラインで使用中（タスクはこの端末に保存されます）';
+        statusEl.classList.add('offline');
+      }
+    }
+
+    function registerServiceWorker() {
+      if (!('serviceWorker' in navigator)) {
+        updateOfflineStatus();
+        return;
+      }
+
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(() => updateOfflineStatus())
+          .catch((error) => {
+            console.error('Service Worker登録エラー:', error);
+            const statusEl = document.getElementById('offline-status');
+            if (statusEl) statusEl.textContent = 'オフライン準備に失敗しました';
+          });
+      });
     }
 
     function updateJstDate() {
@@ -631,8 +672,13 @@
 
     // データの書き出しと読み込み機能は削除しました
 
+    registerServiceWorker();
+    window.addEventListener('online', updateOfflineStatus);
+    window.addEventListener('offline', updateOfflineStatus);
+
     loadData();
     updateJstDate();
+    updateOfflineStatus();
     setInterval(updateJstDate, 60 * 1000);
     render();
   </script>
