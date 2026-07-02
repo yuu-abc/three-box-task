@@ -71,6 +71,12 @@
       display: flex;
       flex-direction: column;
       box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      transition: border-color 0.2s, background 0.2s, transform 0.2s;
+    }
+    .bucket.drag-over {
+      border-color: #534AB7;
+      background: #f6f4ff;
+      transform: translateY(-2px);
     }
     .bucket-header {
       display: flex;
@@ -158,6 +164,25 @@
       padding: 10px 10px;
       border-radius: 10px;
       background: #f1efe8;
+      cursor: grab;
+      user-select: none;
+      touch-action: manipulation;
+      transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+    .task-item:active {
+      cursor: grabbing;
+    }
+    .task-item.dragging {
+      opacity: 0.45;
+      transform: scale(0.98);
+    }
+    .task-item.pointer-dragging {
+      position: fixed;
+      z-index: 1500;
+      pointer-events: none;
+      width: var(--drag-width);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+      opacity: 0.92;
     }
     .task-item.done {
       background: #f1efe8;
@@ -377,7 +402,7 @@
       <button class="icon-btn" id="clear-btn">リセット</button>
     </div>
     <p class="date-line" id="jst-date" aria-live="polite"></p>
-    <p class="hint">やることを今日・今週・いつかに振り分けよう。</p>
+    <p class="hint">やることを今日・今週・いつかに振り分けよう。タスクはドラッグでも移動できます。</p>
     <p class="offline-status" id="offline-status" aria-live="polite"></p>
     <div class="board" id="board"></div>
     <div class="input-section">
@@ -487,6 +512,10 @@
 
         const col = document.createElement('div');
         col.className = 'bucket';
+        col.dataset.bucket = b.key;
+        col.addEventListener('dragover', handleBucketDragOver);
+        col.addEventListener('dragleave', handleBucketDragLeave);
+        col.addEventListener('drop', handleBucketDrop);
 
         const header = document.createElement('div');
         header.className = 'bucket-header';
@@ -517,6 +546,12 @@
         items.forEach(t => {
           const row = document.createElement('div');
           row.className = `task-item ${t.done ? 'done' : ''}`;
+          row.draggable = true;
+          row.dataset.taskId = String(t.id);
+          row.setAttribute('aria-label', `${t.text}をドラッグして箱を移動`);
+          row.addEventListener('dragstart', handleTaskDragStart);
+          row.addEventListener('dragend', handleTaskDragEnd);
+          row.addEventListener('pointerdown', handleTaskPointerDown);
 
           const check = document.createElement('button');
           check.className = `task-checkbox ${t.done ? 'done' : ''}`;
@@ -575,6 +610,110 @@
         col.appendChild(list);
         board.appendChild(col);
       });
+    }
+
+
+    function getTaskById(taskId) {
+      return tasks.find(task => String(task.id) === String(taskId));
+    }
+
+    function moveTaskToBucket(taskId, bucketKey) {
+      const task = getTaskById(taskId);
+      if (!task || task.bucket === bucketKey || !bucketByKey[bucketKey]) return false;
+      task.bucket = bucketKey;
+      saveData();
+      render();
+      showToast(`${bucketByKey[bucketKey].label}へ移動しました`);
+      return true;
+    }
+
+    function clearDragOver() {
+      document.querySelectorAll('.bucket.drag-over').forEach(bucket => bucket.classList.remove('drag-over'));
+    }
+
+    function handleTaskDragStart(e) {
+      if (e.target.closest('button, select')) {
+        e.preventDefault();
+        return;
+      }
+      e.currentTarget.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', e.currentTarget.dataset.taskId);
+    }
+
+    function handleTaskDragEnd(e) {
+      e.currentTarget.classList.remove('dragging');
+      clearDragOver();
+    }
+
+    function handleBucketDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      clearDragOver();
+      e.currentTarget.classList.add('drag-over');
+    }
+
+    function handleBucketDragLeave(e) {
+      if (!e.currentTarget.contains(e.relatedTarget)) {
+        e.currentTarget.classList.remove('drag-over');
+      }
+    }
+
+    function handleBucketDrop(e) {
+      e.preventDefault();
+      const taskId = e.dataTransfer.getData('text/plain');
+      const bucketKey = e.currentTarget.dataset.bucket;
+      clearDragOver();
+      moveTaskToBucket(taskId, bucketKey);
+    }
+
+    function handleTaskPointerDown(e) {
+      if (e.pointerType === 'mouse' || e.target.closest('button, select')) return;
+
+      const row = e.currentTarget;
+      const taskId = row.dataset.taskId;
+      const rect = row.getBoundingClientRect();
+      const startX = e.clientX;
+      const startY = e.clientY;
+      let isDragging = false;
+
+      const moveDraggedRow = (clientX, clientY) => {
+        row.style.left = `${clientX - rect.width / 2}px`;
+        row.style.top = `${clientY - rect.height / 2}px`;
+      };
+
+      const onPointerMove = (moveEvent) => {
+        const delta = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
+        if (!isDragging && delta < 8) return;
+        if (!isDragging) {
+          isDragging = true;
+          row.setPointerCapture(e.pointerId);
+          row.style.setProperty('--drag-width', `${rect.width}px`);
+          row.classList.add('pointer-dragging');
+        }
+        moveEvent.preventDefault();
+        moveDraggedRow(moveEvent.clientX, moveEvent.clientY);
+        clearDragOver();
+        const targetBucket = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY)?.closest('.bucket');
+        if (targetBucket) targetBucket.classList.add('drag-over');
+      };
+
+      const onPointerUp = (upEvent) => {
+        row.removeEventListener('pointermove', onPointerMove);
+        row.removeEventListener('pointerup', onPointerUp);
+        row.removeEventListener('pointercancel', onPointerUp);
+        row.classList.remove('pointer-dragging');
+        row.style.left = '';
+        row.style.top = '';
+        row.style.removeProperty('--drag-width');
+        const targetBucket = document.elementFromPoint(upEvent.clientX, upEvent.clientY)?.closest('.bucket');
+        clearDragOver();
+        if (isDragging && targetBucket) moveTaskToBucket(taskId, targetBucket.dataset.bucket);
+      };
+
+      row.addEventListener('pointermove', onPointerMove);
+      row.addEventListener('pointerup', onPointerUp);
+      row.addEventListener('pointercancel', onPointerUp);
     }
 
     function showWarning(msg) {
