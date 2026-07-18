@@ -3,448 +3,795 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="description" content="シンプルなタスク管理。今日・今週・いつかの3箱に分けて、毎日達成感を得る。">
-  <meta name="theme-color" content="#FFFFFF">
+  <meta name="description" content="今日・今週・いつか。やることを3つの箱で軽やかに整理する、オフライン対応タスクアプリ。">
+  <meta name="theme-color" content="#0A0A0C">
+  <meta name="color-scheme" content="dark">
   <meta name="application-name" content="3箱タスク">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>3箱タスク管理</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23E24B4A' width='180' height='180'/><text x='90' y='110' font-size='80' font-weight='bold' text-anchor='middle' fill='white' font-family='system-ui'>3</text></svg>">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23E24B4A' width='180' height='180' rx='40'/><text x='90' y='120' font-size='90' font-weight='bold' text-anchor='middle' fill='white' font-family='system-ui'>3</text></svg>">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>THREEBOX — 3箱タスク</title>
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #f9f9f7;
-      color: #2c2c2a;
-      padding: 16px 16px 120px 16px; /* 下部入力欄の被り防止 */
-      min-height: 100vh;
+    :root {
+      --bg: #0a0a0c;
+      --panel: #121216;
+      --panel-raised: #18181d;
+      --line: rgba(255, 255, 255, 0.09);
+      --line-strong: rgba(255, 255, 255, 0.16);
+      --text: #f5f5f2;
+      --muted: #8c8c96;
+      --lime: #c7ff45;
+      --violet: #9f8cff;
+      --blue: #74c8ff;
+      --danger: #ff6b78;
+      --today-progress: 0%;
+      color-scheme: dark;
     }
-    .container {
-      max-width: 680px;
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html { background: var(--bg); }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      padding: max(18px, env(safe-area-inset-top)) 0 calc(154px + env(safe-area-inset-bottom));
+      background:
+        radial-gradient(circle at 10% -10%, rgba(159, 140, 255, 0.17), transparent 30rem),
+        radial-gradient(circle at 100% 26%, rgba(199, 255, 69, 0.08), transparent 24rem),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, "SF Pro Display", "Hiragino Sans", "Yu Gothic UI", system-ui, -apple-system, sans-serif;
+      letter-spacing: 0.01em;
+    }
+
+    button,
+    input,
+    select { font: inherit; }
+
+    button,
+    select { touch-action: manipulation; }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: 2px solid var(--lime);
+      outline-offset: 2px;
+    }
+
+    .app-shell {
+      width: min(100%, 760px);
       margin: 0 auto;
     }
+
+    .page-pad { padding-inline: 20px; }
+
     .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
-    }
-    .header h1 {
-      font-size: 22px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .header-icon {
-      font-size: 24px;
+      gap: 16px;
+      margin-bottom: 30px;
     }
 
-    .hint {
-      font-size: 13px;
-      color: #888780;
-      margin-bottom: 8px;
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
     }
-    .offline-status {
+
+    .brand-mark {
+      display: grid;
+      flex: 0 0 38px;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border-radius: 12px;
+      background: var(--lime);
+      color: #09090b;
+      font-size: 21px;
+      font-weight: 950;
+      box-shadow: 0 0 30px rgba(199, 255, 69, 0.12);
+      transform: rotate(-4deg);
+    }
+
+    .brand-copy { min-width: 0; }
+
+    .brand-name {
+      font-size: 15px;
+      font-weight: 850;
+      letter-spacing: 0.12em;
+      line-height: 1.1;
+    }
+
+    .brand-tagline {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 650;
+      letter-spacing: 0.08em;
+    }
+
+    .reset-btn {
+      min-height: 40px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: 0.08em;
+      transition: border-color 180ms ease, color 180ms ease, background 180ms ease;
+    }
+
+    .reset-btn:active {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+    }
+
+    .overview {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 22px;
+      min-height: 176px;
+      overflow: hidden;
+      margin-bottom: 22px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.065), transparent 46%),
+        rgba(18, 18, 22, 0.86);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+    }
+
+    .overview::after {
+      content: "";
+      position: absolute;
+      right: -70px;
+      bottom: -100px;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: rgba(199, 255, 69, 0.08);
+      filter: blur(2px);
+    }
+
+    .eyebrow {
+      margin-bottom: 10px;
+      color: var(--lime);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.18em;
+    }
+
+    .overview h1 {
+      max-width: 330px;
+      font-size: clamp(26px, 7vw, 38px);
+      font-weight: 850;
+      letter-spacing: -0.055em;
+      line-height: 1.08;
+    }
+
+    .overview h1 span { color: var(--lime); }
+
+    .date-line {
+      margin-top: 15px;
+      color: var(--muted);
       font-size: 12px;
-      color: #639922;
-      margin-bottom: 20px;
-      min-height: 17px;
+      font-weight: 620;
     }
-    .offline-status.offline {
-      color: #E24B4A;
+
+    .progress-ring {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      align-self: center;
+      width: 86px;
+      height: 86px;
+      place-items: center;
+      border-radius: 50%;
+      background: conic-gradient(var(--lime) var(--today-progress), rgba(255, 255, 255, 0.08) 0);
+      box-shadow: 0 0 40px rgba(199, 255, 69, 0.08);
     }
+
+    .progress-ring::before {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border-radius: inherit;
+      background: #111115;
+    }
+
+    .progress-value {
+      position: relative;
+      color: var(--text);
+      font-size: 19px;
+      font-weight: 850;
+      letter-spacing: -0.04em;
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 17px;
+    }
+
+    .section-label {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 820;
+      letter-spacing: 0.07em;
+    }
+
+    .section-label small {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 650;
+      letter-spacing: 0.08em;
+    }
+
+    .offline-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 28px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.025);
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .offline-status::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--lime);
+      box-shadow: 0 0 10px rgba(199, 255, 69, 0.75);
+    }
+
+    .offline-status.offline::before {
+      background: var(--danger);
+      box-shadow: 0 0 10px rgba(255, 107, 120, 0.6);
+    }
+
     .board {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 16px;
-      margin-bottom: 20px;
+      grid-auto-columns: min(88vw, 350px);
+      grid-auto-flow: column;
+      gap: 13px;
+      overflow-x: auto;
+      padding: 0 20px 16px;
+      scroll-padding-inline: 20px;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      overscroll-behavior-inline: contain;
     }
+
+    .board::-webkit-scrollbar { display: none; }
+
     .bucket {
-      background: white;
-      border: 0.5px solid #d3d1c7;
-      border-radius: 14px;
-      padding: 16px;
-      min-height: 160px;
+      --accent: var(--lime);
+      position: relative;
       display: flex;
+      min-height: 305px;
       flex-direction: column;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-      transition: border-color 0.2s, background 0.2s, transform 0.2s;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(18, 18, 22, 0.91);
+      scroll-snap-align: start;
+      transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
     }
+
+    .bucket[data-bucket="week"] { --accent: var(--violet); }
+    .bucket[data-bucket="someday"] { --accent: var(--blue); }
+
     .bucket.drag-over {
-      border-color: #534AB7;
-      background: #f6f4ff;
-      transform: translateY(-2px);
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 7%, var(--panel));
+      transform: translateY(-3px);
     }
+
     .bucket-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 14px;
-      font-size: 15px;
-      font-weight: 600;
+      gap: 12px;
+      margin-bottom: 17px;
     }
-    .bucket-title {
+
+    .bucket-title-wrap {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
     }
-    .bucket-icon {
-      font-size: 18px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 20px;
-      height: 20px;
-      flex: 0 0 20px;
+
+    .bucket-number {
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.08em;
     }
-    .icon-calendar {
-      position: relative;
-      overflow: hidden;
-      border: 1px solid #c9c7bd;
-      border-radius: 5px;
-      background: linear-gradient(#E24B4A 0 36%, #ffffff 36% 100%);
-      box-shadow: inset 0 -1px 0 rgba(0,0,0,0.08), 0 1px 1px rgba(0,0,0,0.08);
+
+    .bucket-title {
+      font-size: 19px;
+      font-weight: 820;
+      letter-spacing: -0.025em;
     }
-    .icon-calendar::before {
-      content: '';
-      position: absolute;
-      left: 4px;
-      right: 4px;
-      top: 2px;
-      height: 3px;
-      border-radius: 2px;
-      background: #ffffff;
-      box-shadow: -3px 0 0 #ffffff, 3px 0 0 #ffffff;
-    }
-    .icon-calendar::after {
-      content: '';
-      position: absolute;
-      left: 5px;
-      top: 11px;
-      width: 3px;
-      height: 3px;
-      border-radius: 50%;
-      background: #D3D1C7;
-      box-shadow: 5px 0 0 #D3D1C7, 10px 0 0 #D3D1C7;
-    }
+
     .bucket-count {
-      font-size: 13px;
-      color: #888780;
-      background: #f1efe8;
-      padding: 2px 8px;
+      display: grid;
+      min-width: 30px;
+      height: 30px;
+      padding: 0 8px;
+      place-items: center;
+      border: 1px solid var(--line);
       border-radius: 10px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.035);
+      font-size: 11px;
+      font-weight: 800;
     }
-    .date-line {
-      font-size: 13px;
-      color: #6d6b64;
-      margin: -6px 0 10px;
-      min-height: 19px;
-    }
+
     .task-list {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
       flex: 1;
+      flex-direction: column;
+      gap: 9px;
     }
+
     .empty-state {
-      font-size: 13px;
-      color: #b4b2a9;
-      padding: 8px 0;
+      display: grid;
+      min-height: 190px;
+      place-items: center;
+      border: 1px dashed var(--line-strong);
+      border-radius: 17px;
+      color: #666671;
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.8;
       text-align: center;
-      border: 1px dashed #e4e2da;
-      border-radius: 8px;
     }
+
+    .empty-state::before {
+      content: "+";
+      display: grid;
+      width: 36px;
+      height: 36px;
+      margin: 0 auto 8px;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      color: var(--accent);
+      font-size: 20px;
+    }
+
     .task-item {
       display: flex;
-      align-items: center; /* 中央揃えでタップしやすく */
-      gap: 8px;
-      padding: 10px 10px;
-      border-radius: 10px;
-      background: #f1efe8;
+      align-items: center;
+      gap: 10px;
+      min-height: 58px;
+      padding: 10px 8px 10px 11px;
+      border: 1px solid transparent;
+      border-radius: 16px;
+      background: var(--panel-raised);
       cursor: grab;
-      user-select: none;
       touch-action: manipulation;
-      transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
+      transition: opacity 180ms ease, transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+      user-select: none;
     }
-    .task-item:active {
-      cursor: grabbing;
-    }
+
+    .task-item:active { cursor: grabbing; }
+
+    .task-item:hover { border-color: var(--line); }
+
     .task-item.dragging {
       opacity: 0.45;
       transform: scale(0.98);
     }
+
     .task-item.pointer-dragging {
       position: fixed;
       z-index: 1500;
-      pointer-events: none;
       width: var(--drag-width);
-      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
-      opacity: 0.92;
+      pointer-events: none;
+      opacity: 0.96;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
     }
-    .task-item.done {
-      background: #f1efe8;
-      opacity: 0.6;
-    }
-    /* タップ領域を40px以上に拡大 */
+
+    .task-item.done { opacity: 0.48; }
+
     .task-checkbox {
-      width: 26px;
-      height: 26px;
-      min-width: 26px;
-      border-radius: 6px;
-      border: 1.5px solid #b4b2a9;
-      background: transparent;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: grid;
+      flex: 0 0 28px;
+      width: 28px;
+      height: 28px;
       padding: 0;
-      font-size: 16px;
-      color: white;
-      transition: all 0.2s;
-    }
-    .task-checkbox.done {
-      background: #639922;
-      border-color: #639922;
-    }
-    .task-label {
-      flex: 1;
-      font-size: 14px;
-      line-height: 1.4;
-      word-break: break-word;
-    }
-    .task-label.done {
-      text-decoration: line-through;
-      color: #b4b2a9;
-    }
-    /* 箱移動セレクト */
-    .task-move {
-      width: 30px;
-      height: 30px;
-      min-width: 30px;
-      border: none;
+      place-items: center;
+      border: 1.5px solid #52525e;
+      border-radius: 9px;
       background: transparent;
+      color: #09090b;
       cursor: pointer;
-      padding: 0;
       font-size: 15px;
-      color: #2c2c2a;
-      opacity: 0.55;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      font-weight: 900;
+      transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
     }
-    .task-move:active {
-      background: rgba(0,0,0,0.06);
+
+    .task-checkbox:active { transform: scale(0.88); }
+
+    .task-checkbox.done {
+      border-color: var(--accent);
+      background: var(--accent);
     }
-    /* タップ領域を拡大 */
-    .task-delete {
-      width: 32px;
-      height: 32px;
-      min-width: 32px;
-      border: none;
-      background: transparent;
+
+    .task-label {
+      min-width: 0;
+      flex: 1;
+      color: #e8e8e4;
+      font-size: 14px;
+      font-weight: 580;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .task-label.done {
+      color: var(--muted);
+      text-decoration: line-through;
+      text-decoration-thickness: 1px;
+    }
+
+    .task-move {
+      width: 38px;
+      height: 38px;
+      flex: 0 0 38px;
+      padding: 0 6px;
+      border: 0;
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.045);
+      color: var(--muted);
       cursor: pointer;
+      font-size: 10px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .task-delete {
+      display: grid;
+      flex: 0 0 36px;
+      width: 36px;
+      height: 36px;
       padding: 0;
+      place-items: center;
+      border: 0;
+      border-radius: 11px;
+      background: transparent;
+      color: #686873;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .task-delete:active {
+      background: rgba(255, 107, 120, 0.1);
+      color: var(--danger);
+    }
+
+    .swipe-hint {
       display: flex;
       align-items: center;
       justify-content: center;
-      opacity: 0.4;
-      font-size: 16px;
-      color: #2c2c2a;
+      gap: 7px;
+      margin-top: 3px;
+      color: #5f5f69;
+      font-size: 9px;
+      font-weight: 750;
+      letter-spacing: 0.08em;
     }
-    .input-section {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      padding: 12px 16px;
-      padding-bottom: calc(12px + env(safe-area-inset-bottom)); /* スマホの下部バー対策 */
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(8px);
-      border-top: 0.5px solid #d3d1c7;
+
+    .swipe-hint::before,
+    .swipe-hint::after {
+      content: "";
+      width: 18px;
+      height: 1px;
+      background: var(--line);
+    }
+
+    .composer-shell {
       position: fixed;
+      z-index: 1000;
+      right: 0;
       bottom: 0;
       left: 0;
-      right: 0;
-      z-index: 999;
+      padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+      background: linear-gradient(to top, rgba(10, 10, 12, 1) 64%, rgba(10, 10, 12, 0));
     }
-    /* iOSの自動ズーム防止のためフォントサイズを16pxに */
-    input[type="text"] {
-      flex: 1;
-      padding: 12px;
-      border: 0.5px solid #d3d1c7;
-      border-radius: 10px;
-      font-size: 16px;
-      font-family: inherit;
-      background: #f9f9f7;
+
+    .composer {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 8px;
+      width: min(100%, 720px);
+      margin: 0 auto;
+      padding: 8px;
+      border: 1px solid var(--line-strong);
+      border-radius: 22px;
+      background: rgba(24, 24, 29, 0.96);
+      box-shadow: 0 20px 55px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(18px);
     }
-    input[type="text"]:focus {
-      outline: none;
-      border-color: #534AB7;
-      background: white;
-    }
-    input[type="text"].error {
-      border-color: #E24B4A;
-      background: #fdf2f2;
-    }
-    select {
-      padding: 12px 8px;
-      border: 0.5px solid #d3d1c7;
-      border-radius: 10px;
-      font-size: 16px;
-      font-family: inherit;
+
+    .bucket-select {
+      width: 76px;
+      min-height: 48px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 15px;
+      background: rgba(255, 255, 255, 0.055);
+      color: var(--text);
       cursor: pointer;
-      background: white;
+      font-size: 12px;
+      font-weight: 750;
     }
-    .icon-btn {
-      padding: 8px 12px;
-      border: 0.5px solid #d3d1c7;
-      background: white;
-      border-radius: 8px;
-      font-size: 13px;
+
+    .task-input {
+      min-width: 0;
+      min-height: 48px;
+      padding: 0 5px;
+      border: 0;
+      border-radius: 12px;
+      outline: 0;
+      background: transparent;
+      color: var(--text);
+      caret-color: var(--lime);
+      font-size: 16px;
+      font-weight: 580;
+    }
+
+    .task-input::placeholder { color: #6f6f79; }
+
+    .task-input.error {
+      background: rgba(255, 107, 120, 0.08);
+      box-shadow: inset 0 0 0 1px rgba(255, 107, 120, 0.45);
+    }
+
+    .add-btn {
+      display: grid;
+      width: 48px;
+      height: 48px;
+      place-items: center;
+      border: 0;
+      border-radius: 15px;
+      background: var(--lime);
+      color: #0a0a0c;
       cursor: pointer;
-      white-space: nowrap;
+      font-size: 27px;
+      font-weight: 450;
+      line-height: 1;
+      box-shadow: 0 9px 24px rgba(199, 255, 69, 0.16);
+      transition: transform 150ms ease, filter 150ms ease;
     }
-    .warning-msg {
-      position: fixed;
-      bottom: 90px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #E24B4A;
-      color: white;
-      padding: 12px 20px;
-      border-radius: 10px;
-      font-size: 14px;
-      animation: slideUp 0.3s ease;
-      z-index: 1000;
-      max-width: 90%;
-      text-align: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+
+    .add-btn:active {
+      filter: brightness(0.88);
+      transform: scale(0.92);
     }
+
+    .warning-msg,
     .toast-msg {
       position: fixed;
-      bottom: 90px;
+      z-index: 1800;
+      bottom: calc(94px + env(safe-area-inset-bottom));
       left: 50%;
-      transform: translateX(-50%);
-      background: #2c2c2a;
-      color: white;
-      padding: 12px 20px;
-      border-radius: 10px;
-      font-size: 14px;
-      animation: slideUp 0.3s ease;
-      z-index: 1000;
-      max-width: 90%;
+      width: max-content;
+      max-width: calc(100% - 40px);
+      padding: 12px 17px;
+      border: 1px solid var(--line-strong);
+      border-radius: 13px;
+      background: #24242b;
+      color: var(--text);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
+      font-size: 12px;
+      font-weight: 700;
       text-align: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-      to { opacity: 1; transform: translateX(-50%) translateY(0); }
-    }
-    @media (max-width: 480px) {
-      .board {
-        grid-template-columns: 1fr;
-      }
+      animation: toastIn 250ms ease both;
     }
 
-    /* 確認モーダル（confirm()の代替） */
+    .warning-msg {
+      border-color: rgba(255, 107, 120, 0.38);
+      background: #2b1b20;
+      color: #ffb4bc;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translate(-50%, 12px) scale(0.96); }
+      to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    }
+
     .modal-overlay {
       position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
       z-index: 2000;
+      inset: 0;
+      display: grid;
       padding: 20px;
-    }
-    .modal-box {
-      background: white;
-      border-radius: 14px;
-      padding: 20px;
-      max-width: 320px;
-      width: 100%;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    }
-    .modal-msg {
-      font-size: 15px;
-      line-height: 1.5;
-      margin-bottom: 18px;
-      color: #2c2c2a;
-    }
-    .modal-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
-    .modal-btn {
-      padding: 9px 16px;
-      border-radius: 8px;
-      font-size: 14px;
-      cursor: pointer;
-      border: 0.5px solid #d3d1c7;
-      background: white;
-    }
-    .modal-btn.danger {
-      background: #E24B4A;
-      color: white;
-      border-color: #E24B4A;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.74);
+      backdrop-filter: blur(8px);
+      animation: fadeIn 160ms ease both;
     }
 
+    @keyframes fadeIn { from { opacity: 0; } }
+
+    .modal-box {
+      width: min(100%, 340px);
+      padding: 22px;
+      border: 1px solid var(--line-strong);
+      border-radius: 24px;
+      background: #17171c;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+    }
+
+    .modal-kicker {
+      margin-bottom: 8px;
+      color: var(--danger);
+      font-size: 9px;
+      font-weight: 850;
+      letter-spacing: 0.15em;
+    }
+
+    .modal-msg {
+      margin-bottom: 22px;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 650;
+      line-height: 1.65;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .modal-btn {
+      min-height: 46px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .modal-btn.danger {
+      border-color: transparent;
+      background: var(--danger);
+      color: #1a090c;
+    }
+
+    @media (min-width: 760px) {
+      body { padding-top: 34px; }
+
+      .page-pad { padding-inline: 22px; }
+
+      .board {
+        grid-auto-columns: unset;
+        grid-auto-flow: initial;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        overflow: visible;
+        padding-inline: 22px;
+      }
+
+      .bucket { min-height: 360px; }
+
+      .swipe-hint { display: none; }
+    }
+
+    @media (max-width: 380px) {
+      .overview { padding: 20px; }
+      .overview h1 { font-size: 25px; }
+      .progress-ring { width: 74px; height: 74px; }
+      .bucket-select { width: 68px; padding-inline: 7px; }
+      .composer { gap: 5px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1><span class="header-icon">📋</span>3箱タスク</h1>
-      <button class="icon-btn" id="clear-btn">リセット</button>
+  <main class="app-shell">
+    <div class="page-pad">
+      <header class="header">
+        <div class="brand" aria-label="THREEBOX 3箱タスク">
+          <span class="brand-mark" aria-hidden="true">3</span>
+          <div class="brand-copy">
+            <p class="brand-name">THREEBOX</p>
+            <p class="brand-tagline">DO LESS. FINISH MORE.</p>
+          </div>
+        </div>
+        <button class="reset-btn" id="clear-btn" type="button">RESET</button>
+      </header>
+
+      <section class="overview" aria-labelledby="overview-title">
+        <div>
+          <p class="eyebrow">TODAY'S FOCUS</p>
+          <h1 id="overview-title">今日を、<span id="focus-copy">軽くする。</span></h1>
+          <p class="date-line" id="jst-date" aria-live="polite"></p>
+        </div>
+        <div class="progress-ring" role="img" aria-label="今日の進捗 0%" id="progress-ring">
+          <span class="progress-value" id="progress-value">0%</span>
+        </div>
+      </section>
+
+      <div class="meta-row">
+        <p class="section-label">YOUR BOXES <small>横にスワイプ</small></p>
+        <p class="offline-status" id="offline-status" aria-live="polite">LOCAL SAVE</p>
+      </div>
     </div>
-    <p class="date-line" id="jst-date" aria-live="polite"></p>
-    <p class="hint">やることを今日・今週・いつかに振り分けよう。タスクはドラッグでも移動できます。</p>
-    <p class="offline-status" id="offline-status" aria-live="polite"></p>
-    <div class="board" id="board"></div>
-    <div class="input-section">
-      <input type="text" id="new-task" placeholder="タスクを入力して確定" inputmode="text" enterkeyhint="done" />
-      <select id="new-bucket">
+
+    <section class="board" id="board" aria-label="タスクの3つの箱"></section>
+    <p class="swipe-hint">SWIPE TO SWITCH</p>
+  </main>
+
+  <div class="composer-shell">
+    <form class="composer" id="task-form" autocomplete="off">
+      <select class="bucket-select" id="new-bucket" aria-label="追加する箱">
         <option value="today">今日</option>
         <option value="week">今週</option>
         <option value="someday">いつか</option>
       </select>
-    </div>
+      <input class="task-input" type="text" id="new-task" maxlength="120" placeholder="新しいタスク…" inputmode="text" enterkeyhint="done" aria-label="新しいタスク">
+      <button class="add-btn" type="submit" aria-label="タスクを追加">＋</button>
+    </form>
   </div>
 
   <script>
     const STORAGE_KEY = 'task_manager_data';
     const buckets = [
-      { key: 'today', label: '今日', icon: '☀️', selectIcon: '☀', limit: null },
-      { key: 'week', label: '今週', iconClass: 'icon-calendar', selectIcon: '▦', limit: null },
-      { key: 'someday', label: 'いつか', icon: '☁️', selectIcon: '☁', limit: null }
+      { key: 'today', label: '今日', number: '01', selectIcon: '01', limit: null },
+      { key: 'week', label: '今週', number: '02', selectIcon: '02', limit: null },
+      { key: 'someday', label: 'いつか', number: '03', selectIcon: '03', limit: null }
     ];
-    const bucketByKey = Object.fromEntries(buckets.map(b => [b.key, b]));
+    const bucketByKey = Object.fromEntries(buckets.map(bucket => [bucket.key, bucket]));
 
     let tasks = [];
     let idCounter = 1;
 
-    function createBucketIcon(bucket) {
-      const icon = document.createElement('span');
-      icon.className = `bucket-icon ${bucket.iconClass || ''}`.trim();
-      icon.setAttribute('aria-hidden', 'true');
-      if (!bucket.iconClass) icon.textContent = bucket.icon;
-      return icon;
-    }
-
     function updateOfflineStatus() {
       const statusEl = document.getElementById('offline-status');
       if (!statusEl) return;
-      if (navigator.onLine) {
-        statusEl.textContent = 'オフラインでも使えるよう準備済み';
-        statusEl.classList.remove('offline');
-      } else {
-        statusEl.textContent = 'オフラインで使用中（タスクはこの端末に保存されます）';
-        statusEl.classList.add('offline');
-      }
+      statusEl.textContent = navigator.onLine ? 'LOCAL SAVE' : 'OFFLINE';
+      statusEl.classList.toggle('offline', !navigator.onLine);
     }
 
     function registerServiceWorker() {
@@ -455,11 +802,14 @@
 
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then(() => updateOfflineStatus())
+          .then(updateOfflineStatus)
           .catch((error) => {
             console.error('Service Worker登録エラー:', error);
             const statusEl = document.getElementById('offline-status');
-            if (statusEl) statusEl.textContent = 'オフライン準備に失敗しました';
+            if (statusEl) {
+              statusEl.textContent = 'SAVE ERROR';
+              statusEl.classList.add('offline');
+            }
           });
       });
     }
@@ -469,7 +819,6 @@
       if (!dateEl) return;
       dateEl.textContent = new Intl.DateTimeFormat('ja-JP', {
         timeZone: 'Asia/Tokyo',
-        year: 'numeric',
         month: 'long',
         day: 'numeric',
         weekday: 'short'
@@ -478,24 +827,46 @@
 
     function loadData() {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        try {
-          const data = JSON.parse(stored);
-          tasks = Array.isArray(data.tasks) ? data.tasks : [];
-          idCounter = (data.idCounter || 1);
-        } catch (e) {
-          console.error('データ読み込みエラー:', e);
-          tasks = [];
-        }
+      if (!stored) return;
+
+      try {
+        const data = JSON.parse(stored);
+        tasks = Array.isArray(data.tasks) ? data.tasks : [];
+        idCounter = Number.isFinite(data.idCounter) ? data.idCounter : 1;
+      } catch (error) {
+        console.error('データ読み込みエラー:', error);
+        tasks = [];
       }
     }
 
     function saveData() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks, idCounter }));
-      } catch (e) {
-        console.error('保存エラー:', e);
+      } catch (error) {
+        console.error('保存エラー:', error);
         showWarning('保存に失敗しました');
+      }
+    }
+
+    function renderOverview() {
+      const todayTasks = tasks.filter(task => task.bucket === 'today');
+      const completed = todayTasks.filter(task => task.done).length;
+      const progress = todayTasks.length ? Math.round((completed / todayTasks.length) * 100) : 0;
+      const open = todayTasks.length - completed;
+      const progressValue = document.getElementById('progress-value');
+      const progressRing = document.getElementById('progress-ring');
+      const focusCopy = document.getElementById('focus-copy');
+
+      document.documentElement.style.setProperty('--today-progress', `${progress}%`);
+      progressValue.textContent = `${progress}%`;
+      progressRing.setAttribute('aria-label', `今日の進捗 ${progress}%`);
+
+      if (todayTasks.length === 0) {
+        focusCopy.textContent = '軽くする。';
+      } else if (open === 0) {
+        focusCopy.textContent = 'やり切った。';
+      } else {
+        focusCopy.textContent = `あと${open}つ。`;
       }
     }
 
@@ -503,35 +874,41 @@
       const board = document.getElementById('board');
       board.innerHTML = '';
 
-      buckets.forEach(b => {
-        // 未完了を先に、完了したものは下にまとめる（完了の達成感は残しつつ箱を見やすく）
+      buckets.forEach(bucket => {
         const items = tasks
-          .filter(t => t.bucket === b.key)
+          .filter(task => task.bucket === bucket.key)
           .slice()
-          .sort((a, c) => (a.done === c.done) ? 0 : (a.done ? 1 : -1));
+          .sort((first, second) => (first.done === second.done ? 0 : first.done ? 1 : -1));
 
-        const col = document.createElement('div');
-        col.className = 'bucket';
-        col.dataset.bucket = b.key;
-        col.addEventListener('dragover', handleBucketDragOver);
-        col.addEventListener('dragleave', handleBucketDragLeave);
-        col.addEventListener('drop', handleBucketDrop);
+        const column = document.createElement('article');
+        column.className = 'bucket';
+        column.dataset.bucket = bucket.key;
+        column.addEventListener('dragover', handleBucketDragOver);
+        column.addEventListener('dragleave', handleBucketDragLeave);
+        column.addEventListener('drop', handleBucketDrop);
 
-        const header = document.createElement('div');
+        const header = document.createElement('header');
         header.className = 'bucket-header';
-        const openCount = items.filter(t => !t.done).length;
-        const title = document.createElement('span');
+
+        const titleWrap = document.createElement('div');
+        titleWrap.className = 'bucket-title-wrap';
+
+        const number = document.createElement('span');
+        number.className = 'bucket-number';
+        number.textContent = bucket.number;
+
+        const title = document.createElement('h2');
         title.className = 'bucket-title';
-        title.appendChild(createBucketIcon(b));
-        title.append(b.label);
+        title.textContent = bucket.label;
 
         const count = document.createElement('span');
         count.className = 'bucket-count';
-        count.textContent = openCount;
+        count.textContent = items.filter(task => !task.done).length;
+        count.setAttribute('aria-label', `未完了 ${count.textContent}件`);
 
-        header.appendChild(title);
-        header.appendChild(count);
-        col.appendChild(header);
+        titleWrap.append(number, title);
+        header.append(titleWrap, count);
+        column.appendChild(header);
 
         const list = document.createElement('div');
         list.className = 'task-list';
@@ -539,79 +916,75 @@
         if (items.length === 0) {
           const empty = document.createElement('p');
           empty.className = 'empty-state';
-          empty.textContent = 'まだありません';
+          empty.innerHTML = 'タスクはまだ空です<br>下の入力欄から追加';
           list.appendChild(empty);
         }
 
-        items.forEach(t => {
-          const row = document.createElement('div');
-          row.className = `task-item ${t.done ? 'done' : ''}`;
-          row.draggable = true;
-          row.dataset.taskId = String(t.id);
-          row.setAttribute('aria-label', `${t.text}をドラッグして箱を移動`);
-          row.addEventListener('dragstart', handleTaskDragStart);
-          row.addEventListener('dragend', handleTaskDragEnd);
-          row.addEventListener('pointerdown', handleTaskPointerDown);
-
-          const check = document.createElement('button');
-          check.className = `task-checkbox ${t.done ? 'done' : ''}`;
-          check.setAttribute('aria-label', t.done ? '未完了に戻す' : '完了にする');
-          check.textContent = t.done ? '✓' : '';
-          check.onclick = (e) => {
-            e.preventDefault();
-            t.done = !t.done;
-            saveData();
-            render();
-          };
-
-          const label = document.createElement('span');
-          label.className = `task-label ${t.done ? 'done' : ''}`;
-          label.textContent = t.text;
-
-          // 箱移動：現在の箱以外を選べるシンプルなセレクト
-          const move = document.createElement('select');
-          move.className = 'task-move';
-          move.setAttribute('aria-label', '箱を移動');
-          buckets.forEach(opt => {
-            const o = document.createElement('option');
-            o.value = opt.key;
-            o.textContent = opt.selectIcon;
-            if (opt.key === t.bucket) o.selected = true;
-            move.appendChild(o);
-          });
-          move.onchange = () => {
-            if (move.value !== t.bucket) {
-              t.bucket = move.value;
-              saveData();
-              render();
-            }
-          };
-
-          const del = document.createElement('button');
-          del.className = 'task-delete';
-          del.setAttribute('aria-label', '削除');
-          del.textContent = '✕';
-          del.onclick = (e) => {
-            e.preventDefault();
-            showConfirm('このタスクを削除しますか？', () => {
-              tasks = tasks.filter(x => x.id !== t.id);
-              saveData();
-              render();
-            });
-          };
-
-          row.appendChild(check);
-          row.appendChild(label);
-          row.appendChild(move);
-          row.appendChild(del);
-          list.appendChild(row);
-        });
-
-        col.appendChild(list);
-        board.appendChild(col);
+        items.forEach(task => list.appendChild(createTaskItem(task)));
+        column.appendChild(list);
+        board.appendChild(column);
       });
+
+      renderOverview();
     }
 
+    function createTaskItem(task) {
+      const row = document.createElement('div');
+      row.className = `task-item ${task.done ? 'done' : ''}`;
+      row.draggable = true;
+      row.dataset.taskId = String(task.id);
+      row.setAttribute('aria-label', `${task.text}。ドラッグして箱を移動できます`);
+      row.addEventListener('dragstart', handleTaskDragStart);
+      row.addEventListener('dragend', handleTaskDragEnd);
+      row.addEventListener('pointerdown', handleTaskPointerDown);
+
+      const check = document.createElement('button');
+      check.type = 'button';
+      check.className = `task-checkbox ${task.done ? 'done' : ''}`;
+      check.setAttribute('aria-label', task.done ? '未完了に戻す' : '完了にする');
+      check.textContent = task.done ? '✓' : '';
+      check.addEventListener('click', event => {
+        event.preventDefault();
+        task.done = !task.done;
+        saveData();
+        render();
+      });
+
+      const label = document.createElement('span');
+      label.className = `task-label ${task.done ? 'done' : ''}`;
+      label.textContent = task.text;
+
+      const move = document.createElement('select');
+      move.className = 'task-move';
+      move.setAttribute('aria-label', '箱を移動');
+      buckets.forEach(optionBucket => {
+        const option = document.createElement('option');
+        option.value = optionBucket.key;
+        option.textContent = optionBucket.selectIcon;
+        option.selected = optionBucket.key === task.bucket;
+        move.appendChild(option);
+      });
+      move.addEventListener('change', () => {
+        if (move.value !== task.bucket) moveTaskToBucket(task.id, move.value);
+      });
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'task-delete';
+      remove.setAttribute('aria-label', '削除');
+      remove.textContent = '×';
+      remove.addEventListener('click', event => {
+        event.preventDefault();
+        showConfirm('このタスクを削除しますか？', () => {
+          tasks = tasks.filter(item => item.id !== task.id);
+          saveData();
+          render();
+        });
+      });
+
+      row.append(check, label, move, remove);
+      return row;
+    }
 
     function getTaskById(taskId) {
       return tasks.find(task => String(task.id) === String(taskId));
@@ -631,50 +1004,50 @@
       document.querySelectorAll('.bucket.drag-over').forEach(bucket => bucket.classList.remove('drag-over'));
     }
 
-    function handleTaskDragStart(e) {
-      if (e.target.closest('button, select')) {
-        e.preventDefault();
+    function handleTaskDragStart(event) {
+      if (event.target.closest('button, select')) {
+        event.preventDefault();
         return;
       }
-      e.currentTarget.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', e.currentTarget.dataset.taskId);
+      event.currentTarget.classList.add('dragging');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', event.currentTarget.dataset.taskId);
     }
 
-    function handleTaskDragEnd(e) {
-      e.currentTarget.classList.remove('dragging');
+    function handleTaskDragEnd(event) {
+      event.currentTarget.classList.remove('dragging');
       clearDragOver();
     }
 
-    function handleBucketDragOver(e) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
+    function handleBucketDragOver(event) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
       clearDragOver();
-      e.currentTarget.classList.add('drag-over');
+      event.currentTarget.classList.add('drag-over');
     }
 
-    function handleBucketDragLeave(e) {
-      if (!e.currentTarget.contains(e.relatedTarget)) {
-        e.currentTarget.classList.remove('drag-over');
+    function handleBucketDragLeave(event) {
+      if (!event.currentTarget.contains(event.relatedTarget)) {
+        event.currentTarget.classList.remove('drag-over');
       }
     }
 
-    function handleBucketDrop(e) {
-      e.preventDefault();
-      const taskId = e.dataTransfer.getData('text/plain');
-      const bucketKey = e.currentTarget.dataset.bucket;
+    function handleBucketDrop(event) {
+      event.preventDefault();
+      const taskId = event.dataTransfer.getData('text/plain');
+      const bucketKey = event.currentTarget.dataset.bucket;
       clearDragOver();
       moveTaskToBucket(taskId, bucketKey);
     }
 
-    function handleTaskPointerDown(e) {
-      if (e.pointerType === 'mouse' || e.target.closest('button, select')) return;
+    function handleTaskPointerDown(event) {
+      if (event.pointerType === 'mouse' || event.target.closest('button, select')) return;
 
-      const row = e.currentTarget;
+      const row = event.currentTarget;
       const taskId = row.dataset.taskId;
       const rect = row.getBoundingClientRect();
-      const startX = e.clientX;
-      const startY = e.clientY;
+      const startX = event.clientX;
+      const startY = event.clientY;
       let isDragging = false;
 
       const moveDraggedRow = (clientX, clientY) => {
@@ -682,12 +1055,12 @@
         row.style.top = `${clientY - rect.height / 2}px`;
       };
 
-      const onPointerMove = (moveEvent) => {
+      const onPointerMove = moveEvent => {
         const delta = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
         if (!isDragging && delta < 8) return;
         if (!isDragging) {
           isDragging = true;
-          row.setPointerCapture(e.pointerId);
+          row.setPointerCapture(event.pointerId);
           row.style.setProperty('--drag-width', `${rect.width}px`);
           row.classList.add('pointer-dragging');
         }
@@ -698,7 +1071,7 @@
         if (targetBucket) targetBucket.classList.add('drag-over');
       };
 
-      const onPointerUp = (upEvent) => {
+      const onPointerUp = upEvent => {
         row.removeEventListener('pointermove', onPointerMove);
         row.removeEventListener('pointerup', onPointerUp);
         row.removeEventListener('pointercancel', onPointerUp);
@@ -716,75 +1089,91 @@
       row.addEventListener('pointercancel', onPointerUp);
     }
 
-    function showWarning(msg) {
-      document.querySelectorAll('.warning-msg, .toast-msg').forEach(el => el.remove());
-      const warning = document.createElement('div');
-      warning.className = 'warning-msg';
-      warning.textContent = msg;
-      document.body.appendChild(warning);
-      setTimeout(() => warning.remove(), 3000);
+    function showMessage(message, className, duration) {
+      document.querySelectorAll('.warning-msg, .toast-msg').forEach(element => element.remove());
+      const element = document.createElement('div');
+      element.className = className;
+      element.setAttribute('role', 'status');
+      element.textContent = message;
+      document.body.appendChild(element);
+      setTimeout(() => element.remove(), duration);
     }
 
-    function showToast(msg) {
-      document.querySelectorAll('.warning-msg, .toast-msg').forEach(el => el.remove());
-      const toast = document.createElement('div');
-      toast.className = 'toast-msg';
-      toast.textContent = msg;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 2200);
+    function showWarning(message) {
+      showMessage(message, 'warning-msg', 3000);
     }
 
-    // confirm() の代替。OS側のダイアログがブロックされる環境でも動作する
+    function showToast(message) {
+      showMessage(message, 'toast-msg', 2200);
+    }
+
     function showConfirm(message, onConfirm) {
       const overlay = document.createElement('div');
       overlay.className = 'modal-overlay';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-labelledby', 'confirm-message');
 
       const box = document.createElement('div');
       box.className = 'modal-box';
 
-      const msg = document.createElement('p');
-      msg.className = 'modal-msg';
-      msg.textContent = message;
+      const kicker = document.createElement('p');
+      kicker.className = 'modal-kicker';
+      kicker.textContent = 'CONFIRM';
+
+      const messageElement = document.createElement('p');
+      messageElement.className = 'modal-msg';
+      messageElement.id = 'confirm-message';
+      messageElement.textContent = message;
 
       const actions = document.createElement('div');
       actions.className = 'modal-actions';
 
-      const cancelBtn = document.createElement('button');
-      cancelBtn.className = 'modal-btn';
-      cancelBtn.textContent = 'キャンセル';
-      cancelBtn.onclick = () => overlay.remove();
+      const cancelButton = document.createElement('button');
+      cancelButton.type = 'button';
+      cancelButton.className = 'modal-btn';
+      cancelButton.textContent = 'キャンセル';
+      cancelButton.addEventListener('click', () => overlay.remove());
 
-      const okBtn = document.createElement('button');
-      okBtn.className = 'modal-btn danger';
-      okBtn.textContent = '削除する';
-      okBtn.onclick = () => {
+      const confirmButton = document.createElement('button');
+      confirmButton.type = 'button';
+      confirmButton.className = 'modal-btn danger';
+      confirmButton.textContent = '削除する';
+      confirmButton.addEventListener('click', () => {
         overlay.remove();
         onConfirm();
+      });
+
+      const closeModal = event => {
+        if (event.key === 'Escape') {
+          overlay.remove();
+          document.removeEventListener('keydown', closeModal);
+        }
       };
 
-      actions.appendChild(cancelBtn);
-      actions.appendChild(okBtn);
-      box.appendChild(msg);
-      box.appendChild(actions);
+      actions.append(cancelButton, confirmButton);
+      box.append(kicker, messageElement, actions);
       overlay.appendChild(box);
-
-      overlay.onclick = (e) => {
-        if (e.target === overlay) overlay.remove();
-      };
-
+      overlay.addEventListener('click', event => {
+        if (event.target === overlay) overlay.remove();
+      });
+      document.addEventListener('keydown', closeModal);
       document.body.appendChild(overlay);
+      cancelButton.focus();
     }
 
-    document.getElementById('new-task').addEventListener('keydown', (e) => {
-      if (e.key !== 'Enter') return;
+    function addTask() {
       const input = document.getElementById('new-task');
-      const bucketSel = document.getElementById('new-bucket');
+      const bucketSelect = document.getElementById('new-bucket');
       const text = input.value.trim();
-      if (!text) return;
+      if (!text) {
+        input.focus();
+        return;
+      }
 
-      const bucket = bucketSel.value;
-      const limit = bucketByKey[bucket].limit;
-      const currentCount = tasks.filter(t => t.bucket === bucket && !t.done).length;
+      const bucketKey = bucketSelect.value;
+      const limit = bucketByKey[bucketKey].limit;
+      const currentCount = tasks.filter(task => task.bucket === bucketKey && !task.done).length;
 
       if (limit && currentCount >= limit) {
         input.classList.add('error');
@@ -793,15 +1182,24 @@
         return;
       }
 
-      tasks.push({ id: idCounter++, text, bucket, done: false });
+      tasks.push({ id: idCounter++, text, bucket: bucketKey, done: false });
       input.value = '';
       saveData();
       render();
-      input.blur(); // 入力後にキーボードを閉じる（スマホ向け）
+      input.blur();
+    }
+
+    document.getElementById('task-form').addEventListener('submit', event => {
+      event.preventDefault();
+      addTask();
     });
 
     document.getElementById('clear-btn').addEventListener('click', () => {
-      showConfirm('すべてのタスクを削除してもいいですか？', () => {
+      if (!tasks.length) {
+        showToast('削除するタスクはありません');
+        return;
+      }
+      showConfirm('すべてのタスクを削除しますか？', () => {
         tasks = [];
         idCounter = 1;
         saveData();
@@ -809,12 +1207,9 @@
       });
     });
 
-    // データの書き出しと読み込み機能は削除しました
-
     registerServiceWorker();
     window.addEventListener('online', updateOfflineStatus);
     window.addEventListener('offline', updateOfflineStatus);
-
     loadData();
     updateJstDate();
     updateOfflineStatus();
