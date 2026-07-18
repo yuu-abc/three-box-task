@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">THREEBOX app icon</title>
+  <desc id="desc">Three dark task slots on a tilted lime card</desc>
+  <defs>
+    <linearGradient id="bg" x1="64" y1="32" x2="454" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#17171D"/>
+      <stop offset="1" stop-color="#08080A"/>
+    </linearGradient>
+    <linearGradient id="card" x1="134" y1="115" x2="374" y2="395" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D7FF72"/>
+      <stop offset="1" stop-color="#B8F72D"/>
+    </linearGradient>
+    <filter id="shadow" x="52" y="52" width="428" height="428" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="32" stdDeviation="27" flood-color="#000000" flood-opacity="0.42"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="118" fill="url(#bg)"/>
+  <circle cx="402" cy="104" r="83" fill="#9F8CFF" opacity="0.12"/>
+  <g filter="url(#shadow)" transform="rotate(-6 256 256)">
+    <rect x="147" y="120" width="261" height="283" rx="72" fill="#9F8CFF"/>
+    <rect x="104" y="99" width="288" height="299" rx="77" fill="url(#card)"/>
+    <rect x="157" y="165" width="181" height="45" rx="22.5" fill="#0A0A0C"/>
+    <rect x="157" y="229" width="181" height="45" rx="22.5" fill="#0A0A0C"/>
+    <rect x="157" y="293" width="181" height="45" rx="22.5" fill="#0A0A0C"/>
+    <circle cx="181" cy="187.5" r="8" fill="#C7FF45"/>
+    <circle cx="181" cy="251.5" r="8" fill="#9F8CFF"/>
+    <circle cx="181" cy="315.5" r="8" fill="#74C8FF"/>
+  </g>
+</svg>
